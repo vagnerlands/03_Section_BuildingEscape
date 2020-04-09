@@ -53,7 +53,7 @@ void UGrabber::Update()
 		// 50cm in front of us, comming from inside the pawn
 		const float RayStartDistance = 50.f;
 		// up to 2 meters length
-		const float RayEndDistance = 200.f;
+		const float RayEndDistance = 230.f;
 		// find the current player location and lookat
 		pMainCharacter->GetPlayerViewPoint(EyeLocation, EyeDirection);
 

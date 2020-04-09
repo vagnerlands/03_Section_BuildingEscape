@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/TriggerVolume.h"
+#include "Components/PrimitiveComponent.h"
 
 // Sets default values for this component's properties
 URoom1_OpenDoor::URoom1_OpenDoor()
@@ -34,9 +35,8 @@ void URoom1_OpenDoor::BeginPlay()
 	CurrentYawAngle = AdjustedYaw;
 	// door maximum angle is 100 from start yaw
 	FinalYawAngle += AdjustedYaw;
-	APawn* pActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-	ActorThatOpens = pActor;
-	
+	//APawn* pActor = GetWorld()->GetFirstPlayerController()->GetPawn();
+	//ActorThatOpens = pActor;	
 }
 
 
@@ -49,7 +49,7 @@ void URoom1_OpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 	if (PressurePlate)
 	{
-		if (PressurePlate->IsOverlappingActor(ActorThatOpens))
+		if (TotalMassOnPressurePlate() > MassToActivateDoor)
 		{
 			OpenDoor(DeltaTime);
 			DoorLastOpen = GetWorld()->GetTimeSeconds();
@@ -95,5 +95,22 @@ void URoom1_OpenDoor::CloseDoor(float DeltaTime)
 	//FString outlog = objName.ToString();
 	//UE_LOG(LogTemp, Warning, TEXT(" *** Actor '%s' Yaw: %f [%f / %f] Ajusted %f"), *outlog, doorRotation.Yaw, InitialYawAngle, FinalYawAngle, CurrentAdjustedYaw);
 
+}
+
+float URoom1_OpenDoor::TotalMassOnPressurePlate() const
+{
+	float TotalMass = 0.f;
+
+	TArray<AActor*> OverlappingActors;
+
+	PressurePlate->GetOverlappingActors(OverlappingActors);
+
+	for (AActor* i : OverlappingActors)
+	{
+		TotalMass += i->FindComponentByClass< UPrimitiveComponent >()->GetMass();
+		UE_LOG(LogTemp, Warning, TEXT("  Found actor (%s) mass %f"), *i->GetName(), TotalMass);
+	}
+
+	return TotalMass;
 }
 

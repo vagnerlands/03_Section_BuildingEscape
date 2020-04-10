@@ -21,6 +21,11 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	FORCEINLINE bool IsTriggerActive() const
+	{
+		return (PressurePlateState == PRESSED);
+	}
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -30,6 +35,8 @@ private:
 	enum PressurePlateState
 	{
 		PRESSED = 0,
+		PRESSED_ANIM,
+		// nice trick to find if current state is pressing or releasing
 		UNPRESSED
 	};
 
@@ -45,6 +52,11 @@ private:
 	UPROPERTY()
 	UAudioComponent* PressurePlateAudio = nullptr;
 
+	// time marker for last timetag when trigger was activated, after x seconds,
+	//  we want the state to be changed to "PRESSED" so the door will activate itself
+	float TriggerLastClosed = 0.f;
+	UPROPERTY(EditAnywhere)
+	float TriggerOpenTimeout = 2.f;
 	UPROPERTY(EditAnywhere)
 	float MassToActivateDoor = 60.f;
 

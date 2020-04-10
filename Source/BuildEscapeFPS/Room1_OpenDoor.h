@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-class ATriggerVolume;
 class UAudioComponent;
+class UDoorTrigger;
 #include "Room1_OpenDoor.generated.h"
 
 
@@ -35,41 +35,27 @@ private:
 
 	void OpenDoor(float DeltaTime);
 	void CloseDoor(float DeltaTime);
-	float TotalMassOnPressurePlate() const;
 	bool FindAudioComponent() ;
 
 	// initial Door Yaw angle
 	float InitialYawAngle;
 	float CurrentYawAngle;
-	float DoorLastOpen = 0.f;
-	float DoorLastClose = 0.f;
 	AudioState DoorState = DOOR_CLOSE;
-
-	// mass to activate the door - if total mass in the Pressure plate
-	// is greater than this parameter, then it will open the door
-	UPROPERTY(EditAnywhere)
-	float MassToActivateDoor = 1.f;
 
 	// Final angle for the door open
 	UPROPERTY(EditAnywhere)		
 	float FinalYawAngle = 90.f;
 
 	UPROPERTY(EditAnywhere)
-	ATriggerVolume* PressurePlate;
+	AActor* PressurePlate = nullptr;
+	UDoorTrigger* PressurePlateDoorTrigger = nullptr;
 
 	UPROPERTY()
-	UAudioComponent* AudioOpenDoor = nullptr;
-
-	//UPROPERTY(EditAnywhere)
-	//AActor* ActorThatOpens;
+	UAudioComponent* OpenDoorAudio = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	float OpenDoorSpeed = 1.f;
 
 	UPROPERTY(EditAnywhere)
 	float CloseDoorSpeed = 2.f;
-
-	UPROPERTY(EditAnywhere)
-	// for how many seconds the door remains open before starting closing
-	float DoorOpenTimeout = 1.f;
 };

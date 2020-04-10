@@ -2,12 +2,13 @@
 
 
 #include "Room1_OpenDoor.h"
-#include "GameFramework/Actor.h"
-#include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
-#include "Engine/TriggerVolume.h"
-#include "Components/PrimitiveComponent.h"
+// project includes
 #include "Components/AudioComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "DoorTrigger.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/PlayerController.h"
 
 // Sets default values for this component's properties
 URoom1_OpenDoor::URoom1_OpenDoor()
@@ -38,6 +39,24 @@ void URoom1_OpenDoor::BeginPlay()
 	FinalYawAngle += AdjustedYaw;
 	// Find audio
 	FindAudioComponent();
+
+	if (!PressurePlate)
+	{
+		UE_LOG(LogTemp, Error, TEXT(" *** Pressure Plate wasn't defined for (%s)"), *GetOwner()->GetName());
+	}
+	else
+	{
+		PressurePlateDoorTrigger = PressurePlate->FindComponentByClass<UDoorTrigger>();
+		if (!PressurePlateDoorTrigger)
+		{
+			UE_LOG(LogTemp, Error, TEXT(" *** Pressure Plate Door Trigger wasn't defined for (%s)"), *PressurePlate->GetName());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT(" Found DoorTrigger in (%s)"), *PressurePlate->GetName());
+		}
+	}
+
 }
 
 
@@ -48,25 +67,15 @@ void URoom1_OpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 	// ...
 
-	if (PressurePlate)
+	if ((PressurePlate) && (PressurePlateDoorTrigger))
 	{
-		if (TotalMassOnPressurePlate() > MassToActivateDoor)
+		if (PressurePlateDoorTrigger->IsTriggerActive())
 		{
-			const float TimeNow = GetWorld()->GetTimeSeconds();
-			if (TimeNow > (DoorLastClose + DoorOpenTimeout))
-			{
-				OpenDoor(DeltaTime);
-			}			
-			DoorLastOpen = GetWorld()->GetTimeSeconds();
+			OpenDoor(DeltaTime);
 		}
 		else // keep door shut if actor isn't there
 		{
-			const float TimeNow = GetWorld()->GetTimeSeconds();
-			if (TimeNow > (DoorLastOpen + DoorOpenTimeout))
-			{
-				CloseDoor(DeltaTime);
-			}
-			DoorLastClose = GetWorld()->GetTimeSeconds();
+			CloseDoor(DeltaTime);
 		}
 	}
 	else
@@ -82,17 +91,15 @@ void URoom1_OpenDoor::OpenDoor(float DeltaTime)
 	if (DoorState != DOOR_OPEN)
 	{
 		DoorState = DOOR_OPEN;
-		AudioOpenDoor->Play();
+		if (OpenDoorAudio)
+		{
+			OpenDoorAudio->Play();
+		}
 	}
 	CurrentYawAngle = FMath::FInterpTo(CurrentYawAngle, FinalYawAngle, DeltaTime, OpenDoorSpeed);
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYawAngle;
 	GetOwner()->SetActorRotation(DoorRotation);
-
-	//FName objName = GetOwner()->GetFName();
-	//FString outlog = objName.ToString();
-	//UE_LOG(LogTemp, Warning, TEXT(" *** Actor '%s' Yaw: %f [%f / %f] Ajusted %f"), *outlog, doorRotation.Yaw, InitialYawAngle, FinalYawAngle, CurrentAdjustedYaw);
-
 }
 
 void URoom1_OpenDoor::CloseDoor(float DeltaTime)
@@ -100,40 +107,21 @@ void URoom1_OpenDoor::CloseDoor(float DeltaTime)
 	if (DoorState != DOOR_CLOSE)
 	{
 		DoorState = DOOR_CLOSE;
-		AudioOpenDoor->Play();
+		if (OpenDoorAudio)
+		{
+			OpenDoorAudio->Play();
+		}
 	}
 	CurrentYawAngle = FMath::FInterpTo(CurrentYawAngle,InitialYawAngle, DeltaTime, CloseDoorSpeed);
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYawAngle;
 	GetOwner()->SetActorRotation(DoorRotation);
-
-	//FName objName = GetOwner()->GetFName();
-	//FString outlog = objName.ToString();
-	//UE_LOG(LogTemp, Warning, TEXT(" *** Actor '%s' Yaw: %f [%f / %f] Ajusted %f"), *outlog, doorRotation.Yaw, InitialYawAngle, FinalYawAngle, CurrentAdjustedYaw);
-
-}
-
-float URoom1_OpenDoor::TotalMassOnPressurePlate() const
-{
-	float TotalMass = 0.f;
-
-	TArray<AActor*> OverlappingActors;
-
-	PressurePlate->GetOverlappingActors(OverlappingActors);
-
-	for (AActor* i : OverlappingActors)
-	{
-		TotalMass += i->FindComponentByClass< UPrimitiveComponent >()->GetMass();
-		UE_LOG(LogTemp, Warning, TEXT("  Found actor (%s) mass %f"), *i->GetName(), TotalMass);
-	}
-
-	return TotalMass;
 }
 
 bool URoom1_OpenDoor::FindAudioComponent() 
 {
-	AudioOpenDoor = GetOwner()->FindComponentByClass<UAudioComponent>();
-	if (AudioOpenDoor)
+	OpenDoorAudio = GetOwner()->FindComponentByClass<UAudioComponent>();
+	if (OpenDoorAudio)
 	{
 		return true;
 	}

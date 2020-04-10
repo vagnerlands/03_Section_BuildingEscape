@@ -50,15 +50,20 @@ bool UDoorTrigger::FindAudioComponent()
 
 void UDoorTrigger::MovePlateDown(float DeltaTime)
 {
-	if (PressurePlateState != PRESSED)
+	if (PressurePlateState > PRESSED_ANIM)
 	{
-		PressurePlateState = PRESSED;
-		PressurePlateAudio->Play();
+		PressurePlateState = PRESSED_ANIM;
+		if (PressurePlateAudio)
+		{
+			PressurePlateAudio->Play();
+		}
 	}
 	CurrentHeight = FMath::FInterpTo(CurrentHeight, PressedHeight, DeltaTime, 2.f);
 	FVector actLocation = GetOwner()->GetActorLocation();
 	actLocation.Z = CurrentHeight;
 	GetOwner()->SetActorLocation(actLocation);
+
+	
 }
 
 void UDoorTrigger::MovePlateUp(float DeltaTime)
@@ -66,7 +71,10 @@ void UDoorTrigger::MovePlateUp(float DeltaTime)
 	if (PressurePlateState != UNPRESSED)
 	{
 		PressurePlateState = UNPRESSED;
-		PressurePlateAudio->Play();
+		if (PressurePlateAudio)
+		{
+			PressurePlateAudio->Play();
+		}
 	}
 	CurrentHeight = FMath::FInterpTo(CurrentHeight, UnpressedHeight, DeltaTime, 2.f);
 	FVector actLocation = GetOwner()->GetActorLocation();
@@ -86,7 +94,7 @@ float UDoorTrigger::TotalMassOnPressurePlate() const
 	for (AActor* i : OverlappingActors)
 	{
 		TotalMass += i->FindComponentByClass< UPrimitiveComponent >()->GetMass();
-		UE_LOG(LogTemp, Warning, TEXT("  Found actor (%s) mass %f"), *i->GetName(), TotalMass);
+		//UE_LOG(LogTemp, Warning, TEXT("  Found actor (%s) mass %f"), *i->GetName(), TotalMass);
 	}
 
 	return TotalMass;
@@ -104,10 +112,18 @@ void UDoorTrigger::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 		if (TotalMassOnPressurePlate() > MassToActivateDoor)
 		{
 			MovePlateDown(DeltaTime);
+			const float TimeNow = GetWorld()->GetTimeSeconds();
+			if (TimeNow > (TriggerLastClosed + TriggerOpenTimeout))
+			{
+				PressurePlateState = PRESSED;
+				UE_LOG(LogTemp, Warning, TEXT("   PressurePlate is PRESSED"));
+			}
 		}
 		else // keep door shut if actor isn't there
 		{
 			MovePlateUp(DeltaTime);
+			TriggerLastClosed = GetWorld()->GetTimeSeconds();
+			PressurePlateState = UNPRESSED;
 		}
 	}
 	else

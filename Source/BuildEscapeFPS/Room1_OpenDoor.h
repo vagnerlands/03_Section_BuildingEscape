@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 class ATriggerVolume;
+class UAudioComponent;
 #include "Room1_OpenDoor.generated.h"
 
 
@@ -26,14 +27,23 @@ protected:
 
 private:
 
+	enum AudioState
+	{
+		DOOR_CLOSE = 0,
+		DOOR_OPEN
+	};
+
 	void OpenDoor(float DeltaTime);
 	void CloseDoor(float DeltaTime);
 	float TotalMassOnPressurePlate() const;
+	bool FindAudioComponent() ;
 
 	// initial Door Yaw angle
 	float InitialYawAngle;
 	float CurrentYawAngle;
 	float DoorLastOpen = 0.f;
+	float DoorLastClose = 0.f;
+	AudioState DoorState = DOOR_CLOSE;
 
 	// mass to activate the door - if total mass in the Pressure plate
 	// is greater than this parameter, then it will open the door
@@ -46,6 +56,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	ATriggerVolume* PressurePlate;
+
+	UPROPERTY()
+	UAudioComponent* AudioOpenDoor = nullptr;
 
 	//UPROPERTY(EditAnywhere)
 	//AActor* ActorThatOpens;

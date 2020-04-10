@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/TriggerVolume.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/AudioComponent.h"
 
 // Sets default values for this component's properties
 URoom1_OpenDoor::URoom1_OpenDoor()
@@ -35,8 +36,8 @@ void URoom1_OpenDoor::BeginPlay()
 	CurrentYawAngle = AdjustedYaw;
 	// door maximum angle is 100 from start yaw
 	FinalYawAngle += AdjustedYaw;
-	//APawn* pActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-	//ActorThatOpens = pActor;	
+	// Find audio
+	FindAudioComponent();
 }
 
 
@@ -51,7 +52,11 @@ void URoom1_OpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	{
 		if (TotalMassOnPressurePlate() > MassToActivateDoor)
 		{
-			OpenDoor(DeltaTime);
+			const float TimeNow = GetWorld()->GetTimeSeconds();
+			if (TimeNow > (DoorLastClose + DoorOpenTimeout))
+			{
+				OpenDoor(DeltaTime);
+			}			
 			DoorLastOpen = GetWorld()->GetTimeSeconds();
 		}
 		else // keep door shut if actor isn't there
@@ -61,6 +66,7 @@ void URoom1_OpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 			{
 				CloseDoor(DeltaTime);
 			}
+			DoorLastClose = GetWorld()->GetTimeSeconds();
 		}
 	}
 	else
@@ -73,6 +79,11 @@ void URoom1_OpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 void URoom1_OpenDoor::OpenDoor(float DeltaTime)
 {
+	if (DoorState != DOOR_OPEN)
+	{
+		DoorState = DOOR_OPEN;
+		AudioOpenDoor->Play();
+	}
 	CurrentYawAngle = FMath::FInterpTo(CurrentYawAngle, FinalYawAngle, DeltaTime, OpenDoorSpeed);
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYawAngle;
@@ -86,6 +97,11 @@ void URoom1_OpenDoor::OpenDoor(float DeltaTime)
 
 void URoom1_OpenDoor::CloseDoor(float DeltaTime)
 {
+	if (DoorState != DOOR_CLOSE)
+	{
+		DoorState = DOOR_CLOSE;
+		AudioOpenDoor->Play();
+	}
 	CurrentYawAngle = FMath::FInterpTo(CurrentYawAngle,InitialYawAngle, DeltaTime, CloseDoorSpeed);
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYawAngle;
@@ -112,5 +128,18 @@ float URoom1_OpenDoor::TotalMassOnPressurePlate() const
 	}
 
 	return TotalMass;
+}
+
+bool URoom1_OpenDoor::FindAudioComponent() 
+{
+	AudioOpenDoor = GetOwner()->FindComponentByClass<UAudioComponent>();
+	if (AudioOpenDoor)
+	{
+		return true;
+	}
+	
+	UE_LOG(LogTemp, Error, TEXT("  *** Failed to find an Audio Component on (%s)"), *GetOwner()->GetName());
+
+	return false;
 }
 

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 class ATriggerVolume;
+class UAudioComponent;
 #include "DoorTrigger.generated.h"
 
 
@@ -26,17 +27,35 @@ protected:
 
 private:
 
+	enum PressurePlateState
+	{
+		PRESSED = 0,
+		UNPRESSED
+	};
+
 
 	void MovePlateDown(float DeltaTime);
 	void MovePlateUp(float DeltaTime);
 	float TotalMassOnPressurePlate() const;
+	bool FindAudioComponent();
 
 	UPROPERTY(EditAnywhere)
 	ATriggerVolume* PressurePlate;
 
+	UPROPERTY()
+	UAudioComponent* PressurePlateAudio = nullptr;
+
+	UPROPERTY(EditAnywhere)
 	float MassToActivateDoor = 60.f;
+
+	// what is the unpressed Height of the pressure plate, for animation
 	float UnpressedHeight;
+	// what is the pressed Height of the pressure plate, for animation
 	float PressedHeight;
+	// what is the current Height of the pressure plate, for animation
 	float CurrentHeight;
+	// if it's UNPRESSED and changes to PRESSED, sound is played
+	// same otherwise
+	PressurePlateState PressurePlateState = UNPRESSED;
 		
 };

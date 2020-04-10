@@ -4,6 +4,7 @@
 #include "DoorTrigger.h"
 #include "GameFramework/Actor.h"
 #include "Engine/TriggerVolume.h"
+#include "Components/AudioComponent.h"
 #include "Components/PrimitiveComponent.h"
 
 // Sets default values for this component's properties
@@ -24,14 +25,37 @@ void UDoorTrigger::BeginPlay()
 
 	FVector plateLocation = GetOwner()->GetActorLocation();
 
+	FindAudioComponent();
+
+	// saves the initial height of the pressure plate
 	UnpressedHeight = plateLocation.Z;
+	// when pressed, it should resize Z axis by 10cm  (5cm actually)
 	PressedHeight = plateLocation.Z - 10.f;
 	
 }
 
+bool UDoorTrigger::FindAudioComponent()
+{
+	PressurePlateAudio = GetOwner()->FindComponentByClass<UAudioComponent>();
+
+	if (PressurePlateAudio)
+	{
+		return true;
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("  *** Failed to find audio component for (%s)"), *GetOwner()->GetName());
+
+	return false;
+}
+
 void UDoorTrigger::MovePlateDown(float DeltaTime)
 {
-	CurrentHeight = FMath::FInterpTo(CurrentHeight, PressedHeight, DeltaTime, 1.f);
+	if (PressurePlateState != PRESSED)
+	{
+		PressurePlateState = PRESSED;
+		PressurePlateAudio->Play();
+	}
+	CurrentHeight = FMath::FInterpTo(CurrentHeight, PressedHeight, DeltaTime, 2.f);
 	FVector actLocation = GetOwner()->GetActorLocation();
 	actLocation.Z = CurrentHeight;
 	GetOwner()->SetActorLocation(actLocation);
@@ -39,7 +63,12 @@ void UDoorTrigger::MovePlateDown(float DeltaTime)
 
 void UDoorTrigger::MovePlateUp(float DeltaTime)
 {
-	CurrentHeight = FMath::FInterpTo(CurrentHeight, UnpressedHeight, DeltaTime, 1.f);
+	if (PressurePlateState != UNPRESSED)
+	{
+		PressurePlateState = UNPRESSED;
+		PressurePlateAudio->Play();
+	}
+	CurrentHeight = FMath::FInterpTo(CurrentHeight, UnpressedHeight, DeltaTime, 2.f);
 	FVector actLocation = GetOwner()->GetActorLocation();
 	actLocation.Z = CurrentHeight;
 	GetOwner()->SetActorLocation(actLocation);
